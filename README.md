@@ -1,2 +1,12 @@
 # seshat-3store
 Seshat: Global History Databank was founded in 2011 to bring together the most current and comprehensive body of knowledge about human history in one place. The huge potential of this knowledge for testing theories about political and economic development has been largely untapped.
+
+# Our unique Databank
+systematically collects what is currently known about the social and political organization of human societies and how civilizations have evolved over time. This massive collection of historical information allows us and others to rigorously test different hypotheses about the rise and fall of large-scale societies across the globe and human history.
+
+# Working with a large international and interdisciplinary team
+our database offers the means to study the past through well-established scientific techniques. We believe that our approach is the best way to provide meaningful answers to some of the most important questions about the human experience.
+
+# Collaborators to the Code
+James Bennet
+Majid Benam

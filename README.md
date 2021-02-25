@@ -7,6 +7,18 @@ systematically collects what is currently known about the social and political o
 # Working with a large international and interdisciplinary team
 our database offers the means to study the past through well-established scientific techniques. We believe that our approach is the best way to provide meaningful answers to some of the most important questions about the human experience.
 
+# Board of Directors
+Prof. Peter Turchin, Chair (evolutionary anthropologist at the University of Connecticut and Complexity Science Hub, Vienna)
+Prof. Harvey Whitehouse (anthropologist at the University of Oxford)
+Prof. Pieter François (historian and evolutionary anthropologist at the University of Oxford)
+Dr. Kevin C. Feeney (computer scientist and CEO of TerminusDB)
+Prof. Jennifer Larson (classicist at Kent State University)
+
+# Staff
+Dr. Daniel Hoyer, Senior Project Manager
+Jill Levine, Project Manager
+Jenny Reddish, Lead Editor
+
 # Collaborators to the Code
-James Bennet
+James Bennett
 Majid Benam

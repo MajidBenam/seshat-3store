@@ -1,0 +1,16 @@
+NGA|Polity|Section|Subsection|Variable|Value From|Value To|Date From|Date To|Fact Type|Value Note|Date Note|Error Note
+# AfHepht: Peak date: 483CE
+NGA|AfGhazn|General variables||Peak date|1029 CE||||simple|simple||
+NGA|AfHepht|General variables||Peak date|509-522 CE||||simple|simple||
+# AfHepht: Polity territory: [1000000:450CE; [2750000-3000000]: 500CE]
+NGA|AfHepht|Social Complexity variables|Social Scale|Polity territory|1000000||450CE||complex|simple||
+NGA|AfHepht|Social Complexity variables|Social Scale|Polity territory|2750000|3000000|500CE||complex|range||
+# AfHepht: Full-time Bureaucrats: {inferred present;absent}
+NGA|AfHepht|Social Complexity variables|Bureaucracy characteristics|Full-time bureaucrats|absent||||simple|disputed||
+NGA|AfHepht|Social Complexity variables|Bureaucracy characteristics|Full-time bureaucrats|present||||simple|disputed||
+NGA|AfGhurd|General variables||Peak date|1200 BCE||||simple|simple||
+NGA|AfGhurd|Social Complexity variables|Social Scale|Polity territory|60000|80000|1150BCE||complex|range||
+NGA|AfGhurd|Social Complexity variables|Social Scale|Polity territory|900000|1100000|1175BCE||complex|range||
+NGA|AfGhurd|Social Complexity variables|Social Scale|Polity territory|1600000|1700000|1250BCE|1200BCE|complex|range||
+NGA|AfGhurd|Social Complexity variables|Bureaucracy characteristics|Full-time bureaucrats|inferred present||1200BCE||simple|disputed||
+NGA|AfGhurd|Social Complexity variables|Bureaucracy characteristics|Full-time bureaucrats|absent||1200BCE||simple|disputed||

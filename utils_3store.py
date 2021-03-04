@@ -70,8 +70,8 @@ def precast_values(value,value_type):
             try:
                 date = '-%04d' % int(date[0:bce])
             except ValueError:
-                print('Unable to pre-cast {value} to gYear; assuming 0CE')
-                date = '0'
+                print(f"WARNING: Unable to pre-cast '{value}' to gYear; assuming 0CE")
+                date = '0000'
         else:
             ce_ad = date.find('A')
             if ce_ad == -1:
@@ -81,8 +81,8 @@ def precast_values(value,value_type):
             try:
                 date = '%04d' % int(date[0:ce_ad])
             except ValueError:
-                print('Unable to pre-cast {value} to gYear; assuming 0CE')
-                date = '0'
+                print(f"WARNING: Unable to pre-cast '{value}' to gYear; assuming 0CE")
+                date = '0000'
         return date
 
     if value_type == 'xdd:gYearRange':
@@ -97,11 +97,30 @@ def precast_values(value,value_type):
             return precast_values(value,'xsd:gYear')
 
     if value_type in ['xdd:integerRange','xdd:decimalRange']:
+
+        subtype = {'xdd:integerRange': 'xsd:integer',
+                   'xdd:decimalRange': 'xsd:decimal'}[value_type]
         parts = value.split(':') # local convention to separate a range (see insert_from_csv)
         if len(parts) == 2:
-            return '[' + parts[0] + ',' + parts[1] + ']'
+            return '[' + precast_values(parts[0],subtype) + ',' + precast_values(parts[1],subtype) + ']'
         else:
-            pass # fall though and take as-is
+            return precast_values(value,subtype)
+
+    if value_type == 'xsd:integer':
+        # Quite often you'll get absent/present/suspected unknown rather than 0 for long walls
+        try:
+            int(value)
+        except ValueError:
+            print(f"WARNING: Unable to pre-cast '{value}' to integer; assuming 0")
+            value = '0'
+
+    if value_type == 'xsd:decimal':
+        try:
+            float(value)
+        except ValueError:
+            print(f"WARNING: Unable to pre-cast '{value}' to decimal; assuming 0.0")
+            value = '0.0'
+
     # if no explicit conversion, just return value...
     return value
 

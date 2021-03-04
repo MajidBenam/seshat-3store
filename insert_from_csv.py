@@ -7,8 +7,8 @@ import os
 from utils_3store import *
 pp = pprint.PrettyPrinter(indent=4) # for debugger
 
-verbose_mode = True # CONTROL
-dump_results = False # CONTROL very noisy with batched queries
+verbose_mode = False # CONTROL silence 'adds' but report commits
+dump_results = False # CONTROL on successful commits; very noisy with batched queries
 enumerations_enabled = False # CONTROL
 gYear_type = 'xsd:gYear'
 raw_gYear_type = ensure_raw_type(gYear_type)
@@ -24,23 +24,25 @@ polity_query = None
 total_assertions = 0
 total_inserts = 0
 total_deletes = 0
+total_commit_failures = 0
 
 def execute_commit(qlist):
     global client, polity_query_name, polity_query
-    global total_assertions,total_inserts,total_deletes
+    global total_assertions,total_inserts,total_deletes,total_commit_failures
     msg = f"Committing data for {polity_query_name}"
+    print(msg)
     try:
         q = WOQLQuery().woql_and(*qlist)
         result = q.execute(client,commit_msg=msg)
-        if verbose_mode:
-            print(msg)
-            if dump_results:
-                pprint.pprint(result,indent=4)
+        if dump_results:
+            pprint.pprint(result,indent=4)
         total_assertions += 1
         total_inserts += result['inserts']
         total_deletes += result['deletes']
-    except: # API error
-        print(f"Execution ERROR for: {msg} -- skipped")
+    except Exception as exception: # API error or whatever
+        print(f"Execution ERROR while {msg} -- skipped")
+        print(f"{exception.msg}")
+        total_commit_failures += 1
     
 def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To, Fact_Type, Value_Note):
     global client, flushed_values, polity_query_name, polity_query
@@ -61,8 +63,7 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
     try:
         property_name, scoped, property_type = variable_info[Variable]
     except KeyError:
-        if verbose_mode:
-            print(f"Unknown property {Variable} - skipping")
+        print(f"WARNING: Unknown property {Variable} - skipping")
         return None
     
     if scoped:
@@ -72,8 +73,7 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
         try:
             property_value_name, raw_type = type_info[property_type]
         except KeyError:
-            if verbose_mode:
-                print(f"Unknown type {property_type} for {Variable} - skipping")
+            print(f"WARNING: Unknown type {property_type} for {Variable} - skipping")
             return None
             
     else:
@@ -192,9 +192,8 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
             ci_var = unique_var('v:SVci')
             unique_id(qv,'doc:Confidence',[Polity,property_name],ci_var)
             qv.insert(ci_var,'scm:Confidence') # make a Confidence instance
-            i_var = unique_var('v:SVi')
-            qv.cast('inferred','xsd:string',i_var) # eventually not 'inferred' but a variable bound to the right enum instance with disputed as 'label'
-            qv.add_triple(ci_var,'scm:Confidence',i_var) 
+            qv.cast('inferred','xsd:string',ci_var) # eventually not 'inferred' but a variable bound to the right enum instance with disputed as 'label'
+            qv.add_triple(ci_var,'scm:Confidence',ci_var) 
             # add the Confidence instance to the ScopedValue instance NOTE the cardinality of confidence must be > 1
             qv.add_triple(pv_var,'confidence',ci_var)
             confidence = confidence + " inferred"
@@ -261,6 +260,7 @@ if __name__ == "__main__":
         if polity_query: # finish the last polity_query, if any
             execute_commit(polity_query)
         print(f"Total assertions: {total_assertions} requiring inserts: {total_inserts} deletes: {total_deletes}")
+        print(f"Total failed commits: {total_commit_failures}")
     else:
         print(f"Database {db_id} does not exist!")
     print('Execution time: %.1fs' % (time.time() - start_time))

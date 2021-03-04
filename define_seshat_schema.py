@@ -6,7 +6,7 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 from utils_3store import *
 
-verbose = True # CONTROL
+verbose = False # CONTROL
 reset_db = True # CONTROL
 
 gYear_type = 'xsd:gYear'
@@ -80,7 +80,12 @@ def create_seshat_schema(client):
         if execute_incrementally:
             if message is not None:
                 print(message)
-            q.execute(client,commit_msg=message)
+            try:
+                q.execute(client,commit_msg=message)
+            except Exception as exception: # API error or whatever
+                print(f"Execution ERROR for: {message} -- skipped")
+                print(f"{exception.msg}")
+    
         return q
     
     # kevin.js: initial un-numbered q
@@ -304,5 +309,3 @@ if __name__ == "__main__":
     save_schema_info((schema_declarations,variable_info,type_info))
     display_variable_info(variable_info,type_info)
     print('Execution time: %.1fs' % (time.time() - start_time))
-                            
-

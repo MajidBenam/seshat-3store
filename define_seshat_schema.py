@@ -41,7 +41,7 @@ def normaliseID(raw, _type):
         if type(raw) is list:
             ids = []
             for p in raw:
-                ids.append(normaliseID(p,'id'))
+                ids.append(normaliseID(p,_type))
             return ids
         else:
             bits = raw.split(":")

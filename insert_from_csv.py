@@ -12,6 +12,10 @@ dump_results = False # CONTROL on successful commits; very noisy with batched qu
 enumerations_enabled = False # CONTROL
 gYear_type = 'xsd:gYear'
 raw_gYear_type = ensure_raw_type(gYear_type)
+Confidence_type = 'scm:Confidence'
+raw_Confidence_type = ensure_raw_type(Confidence_type)
+avoid_confidence_assertions = True # We have some class subsumption BUG here
+
 # updated below
 variable_info = {}
 type_info = {}
@@ -173,14 +177,16 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
                 qv.add_triple(pv_var,'end',dt_var)
                 dates =  f"[{Date_From},{Date_To}]"
 
-        if Value_Note == 'disputed':
+        if Value_Note == 'disputed' and not avoid_confidence_assertions:
             # eventually we need to convert 'disputed' into the enumerated value in the class
             # name an instance of ScopedConfidence and assert property 'String'
             cd_var = unique_var('v:SVcd')
             unique_id(qv,'doc:Confidence',[Polity,property_name],cd_var)
             qv.insert(cd_var,'scm:Confidence') # make a Confidence instance
-            qv.cast(Value_Note,'xsd:string',cd_var) # eventually not 'disputed' but a variable bound to the right enum instance with disputed as 'label'
-            qv.add_triple(cd_var,'scm:Confidence',cd_var) 
+            cdv_var = unique_var('v:SVcdv')
+            # Does cast deal w/ enums?
+            qv.cast(Value_Note,raw_Confidence_type,cdv_var) # eventually not 'disputed' but a variable bound to the right enum instance with disputed as 'label'
+            qv.add_triple(cd_var,'scm:Confidence',cdv_var) 
             # add the Confidence instance to the ScopedValue instance NOTE the cardinality of confidence must be > 1
             qv.add_triple(pv_var,'confidence',cd_var)
             confidence = confidence + f" {Value_Note}"
@@ -188,12 +194,14 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
         # Note we can have multiple 'confidence' assertions such as 'disputed' and 'inferred'? for the same 'value'?  Happens in the db, e.g.,
         # NGA|CnLrJin|Warfare variables|Military Technologies|Incendiaries|inferred present||||simple|disputed||
         # NGA|CnLrJin|Warfare variables|Military Technologies|Incendiaries|present||||simple|disputed||
-        if inferred:
+        if inferred and not avoid_confidence_assertions:
             ci_var = unique_var('v:SVci')
             unique_id(qv,'doc:Confidence',[Polity,property_name],ci_var)
             qv.insert(ci_var,'scm:Confidence') # make a Confidence instance
-            qv.cast('inferred','xsd:string',ci_var) # eventually not 'inferred' but a variable bound to the right enum instance with disputed as 'label'
-            qv.add_triple(ci_var,'scm:Confidence',ci_var) 
+            civ_var = unique_var('v:SVciv')
+            # Does cast deal w/ enums?
+            qv.cast('inferred',raw_Confidence_type,civ_var) # eventually not 'inferred' but a variable bound to the right enum instance with disputed as 'label'
+            qv.add_triple(ci_var,'scm:Confidence',civ_var) 
             # add the Confidence instance to the ScopedValue instance NOTE the cardinality of confidence must be > 1
             qv.add_triple(pv_var,'confidence',ci_var)
             confidence = confidence + " inferred"

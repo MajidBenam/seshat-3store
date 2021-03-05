@@ -34,15 +34,19 @@ def execute_commit(qlist):
     global client, polity_query_name, polity_query
     global total_assertions,total_inserts,total_deletes,total_commit_failures
     msg = f"Committing data for {polity_query_name}"
-    print(msg)
     try:
         q = WOQLQuery().woql_and(*qlist)
+        execute_start_time = time.time()
         result = q.execute(client,commit_msg=msg)
+        execute_elapsed_s = "%.2fs" % (time.time() - execute_start_time)
+        total_assertions += 1
+        inserts = result['inserts']
+        deletes = result['deletes']
+        total_inserts += inserts
+        total_deletes += deletes
+        print(f"{msg} i:{inserts} d:{deletes} {execute_elapsed_s}")
         if dump_results:
             pprint.pprint(result,indent=4)
-        total_assertions += 1
-        total_inserts += result['inserts']
-        total_deletes += result['deletes']
     except Exception as exception: # API error or whatever
         print(f"Execution ERROR while {msg} -- skipped")
         print(f"{exception.msg}")

@@ -14,7 +14,6 @@ gYear_type = 'xsd:gYear'
 raw_gYear_type = ensure_raw_type(gYear_type)
 Confidence_type = 'scm:Confidence'
 raw_Confidence_type = ensure_raw_type(Confidence_type)
-avoid_confidence_assertions = True # We have some class subsumption BUG here
 
 # updated below
 variable_info = {}
@@ -38,6 +37,7 @@ def execute_commit(qlist):
         q = WOQLQuery().woql_and(*qlist)
         execute_start_time = time.time()
         result = q.execute(client,commit_msg=msg)
+        # Makes no difference to timing: client.squash(msg) # per Kevin: flatten the 'journal'
         execute_elapsed_s = "%.2fs" % (time.time() - execute_start_time)
         total_assertions += 1
         inserts = result['inserts']
@@ -48,7 +48,8 @@ def execute_commit(qlist):
         if dump_results:
             pprint.pprint(result,indent=4)
     except Exception as exception: # API error or whatever
-        print(f"Execution ERROR while {msg} -- skipped")
+        execute_elapsed_s = "%.2fs" % (time.time() - execute_start_time)
+        print(f"Execution ERROR while {msg} after {execute_elapsed_s} -- skipped")
         print(f"{exception.msg}")
         total_commit_failures += 1
     
@@ -89,7 +90,7 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
     real_raw_type = ensure_raw_type(raw_type)
     
     lower_Polity = Polity.lower() # Make canonical;this was the previous encoding idea for ids
-
+    where = f"{Polity}|{Variable}"
     # normally (like on the wiki or on another web interface) we would present all the Scoped values
     # for a variable and then reassert them enmass, deleting the prior versions
     # However, with a csv we don't know the order of the lines for all the multiple values
@@ -141,7 +142,7 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
     if 'Range' in raw_type:
         if Value_To != empty_value:
             value = Value_From + ':' + Value_To # don't use - as separator
-    value = precast_values(value,raw_type)
+    value = precast_values(value,raw_type,where)
     
     dates = ''
     confidence = ''
@@ -169,28 +170,29 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
         if Date_From != empty_value:
             # Does gYear handle 450CE? NO
             # under ScopedValue why not dates as integerRange rather than start and end?
-            Date_From = precast_values(Date_From,gYear_type)
+            Date_From = precast_values(Date_From,gYear_type,f"{where}_DateFrom")
             df_var = unique_var('v:Date_From')
             qv.cast(Date_From,raw_gYear_type,df_var) # cast'ing to xsd:gYear fails to return anything and does not complain
             qv.add_triple(pv_var,'start',df_var)
             dates = dates + f":{Date_From}"
             if Date_To != empty_value:
-                Date_To = precast_values(Date_To,gYear_type)
+                Date_To = precast_values(Date_To,gYear_type,f"{where}_DateTo")
                 dt_var = unique_var('v:Date_To')
                 qv.cast(Date_To,raw_gYear_type,dt_var) # cast'ing to xsd:gYear fails to return anything and does not complain
                 qv.add_triple(pv_var,'end',dt_var)
                 dates =  f"[{Date_From},{Date_To}]"
 
-        if Value_Note == 'disputed' and not avoid_confidence_assertions:
+        # TODO require scoped to deal with disputed else badly formed csv
+        if scoped and Value_Note == 'disputed':
             # eventually we need to convert 'disputed' into the enumerated value in the class
             # name an instance of ScopedConfidence and assert property 'String'
             cd_var = unique_var('v:SVcd')
             unique_id(qv,'doc:Confidence',[Polity,property_name],cd_var)
-            qv.insert(cd_var,'scm:Confidence') # make a Confidence instance
+            qv.insert(cd_var,Confidence_type) # make a Confidence instance
             cdv_var = unique_var('v:SVcdv')
             # Does cast deal w/ enums?
             qv.cast(Value_Note,raw_Confidence_type,cdv_var) # eventually not 'disputed' but a variable bound to the right enum instance with disputed as 'label'
-            qv.add_triple(cd_var,'scm:Confidence',cdv_var) 
+            qv.add_triple(cd_var,Confidence_type,cdv_var)   # The property has the name as the class!
             # add the Confidence instance to the ScopedValue instance NOTE the cardinality of confidence must be > 1
             qv.add_triple(pv_var,'confidence',cd_var)
             confidence = confidence + f" {Value_Note}"
@@ -198,14 +200,15 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
         # Note we can have multiple 'confidence' assertions such as 'disputed' and 'inferred'? for the same 'value'?  Happens in the db, e.g.,
         # NGA|CnLrJin|Warfare variables|Military Technologies|Incendiaries|inferred present||||simple|disputed||
         # NGA|CnLrJin|Warfare variables|Military Technologies|Incendiaries|present||||simple|disputed||
-        if inferred and not avoid_confidence_assertions:
+        # TODO require scoped to deal with inferred else badly formed csv
+        if scoped and inferred:
             ci_var = unique_var('v:SVci')
             unique_id(qv,'doc:Confidence',[Polity,property_name],ci_var)
-            qv.insert(ci_var,'scm:Confidence') # make a Confidence instance
+            qv.insert(ci_var,Confidence_type) # make a Confidence instance
             civ_var = unique_var('v:SVciv')
             # Does cast deal w/ enums?
             qv.cast('inferred',raw_Confidence_type,civ_var) # eventually not 'inferred' but a variable bound to the right enum instance with disputed as 'label'
-            qv.add_triple(ci_var,'scm:Confidence',civ_var) 
+            qv.add_triple(ci_var,Confidence_type,civ_var)   # The property has the name as the class!
             # add the Confidence instance to the ScopedValue instance NOTE the cardinality of confidence must be > 1
             qv.add_triple(pv_var,'confidence',ci_var)
             confidence = confidence + " inferred"
@@ -276,3 +279,6 @@ if __name__ == "__main__":
     else:
         print(f"Database {db_id} does not exist!")
     print('Execution time: %.1fs' % (time.time() - start_time))
+# debugging phrases
+# retrieve all properties and values from an originally named polity
+# pp WOQLQuery().woql_and(WOQLQuery().triple('v:Polity_ID','original_PolID','AfDurrn'),WOQLQuery().triple('v:Polity_ID','v:P','v:PV'),WOQLQuery().triple('v:PV','v:p','v:V')).execute(client)

@@ -51,7 +51,7 @@ def ensure_raw_type(raw_type):
     return raw_type
 
 # this function always returns a string but properly formatted for the cast()
-def precast_values(value,value_type):
+def precast_values(value,value_type,source):
     if value_type == 'xsd:string':
         # per http://www.datypic.com/sc/xsd/t-xsd_string.html
         # must do this in proper order! since &amp; uses &!
@@ -59,6 +59,7 @@ def precast_values(value,value_type):
         value = value.replace('<','&lt;')
 
     if value_type == 'xsd:gYear':
+        # Per Kevin 3/2021: Doesn't work.  But even if it did it does not handle CE/AD/BCE etc.
         # Convert CE/BCE/AD/BC to +/- and expand to CCYY
         # per http://www.datypic.com/sc/xsd/t-xsd_gYear.html
         date = value.strip() # eliminate leading and trailing whitespace
@@ -70,7 +71,7 @@ def precast_values(value,value_type):
             try:
                 date = '-%04d' % int(date[0:bce])
             except ValueError:
-                print(f"WARNING: Unable to pre-cast '{value}' to gYear; assuming 0CE")
+                print(f"WARNING: Unable to pre-cast '{value}' from {source} to gYear; assuming 0CE")
                 date = '0000'
         else:
             ce_ad = date.find('A')
@@ -81,44 +82,51 @@ def precast_values(value,value_type):
             try:
                 date = '%04d' % int(date[0:ce_ad])
             except ValueError:
-                print(f"WARNING: Unable to pre-cast '{value}' to gYear; assuming 0CE")
+                print(f"WARNING: Unable to pre-cast '{value}' from {source} to gYear; assuming 0CE")
                 date = '0000'
         return date
 
     if value_type == 'xdd:gYearRange':
         parts = value.split('-') # Assume we never get -400 - 300BCE but rather 400BCE-300BCE
         if len(parts) == 2:
-            ys = precast_values(parts[0],'xsd:gYear')
-            ye = precast_values(parts[1],'xsd:gYear')
+            ys = precast_values(parts[0],'xsd:gYear',source)
+            ye = precast_values(parts[1],'xsd:gYear',source)
             if ye[0] == '-' and ys[0] != '-': # deal with 400-300BCE which really means 400BCE-300BCE
                 ys = '-' + ys
             return '[' + ys + ',' + ye + ']'
         else:
-            return precast_values(value,'xsd:gYear')
+            return precast_values(value,'xsd:gYear',source)
 
     if value_type in ['xdd:integerRange','xdd:decimalRange']:
 
         subtype = {'xdd:integerRange': 'xsd:integer',
                    'xdd:decimalRange': 'xsd:decimal'}[value_type]
-        parts = value.split(':') # local convention to separate a range (see insert_from_csv)
+        value = value.strip()
+        # population or territory sometimes is '60000:80000' (clearly w/o a date!)   or '60000-80000' 
+        parts = value.split(':') # local Seshat convention to separate a range of positive numbers (see insert_from_csv)
         if len(parts) == 2:
-            return '[' + precast_values(parts[0],subtype) + ',' + precast_values(parts[1],subtype) + ']'
-        else:
-            return precast_values(value,subtype)
+            print(f"WARNING: Pre-casting '{value}' from {source} to a range: likely ill-formed!")
+            return '[' + precast_values(parts[0],subtype,source) + ',' + precast_values(parts[1],subtype,source) + ']'
+        if value[0] == '-': # a negative number?  could be -100-300 but how to parse that?
+            return precast_values(value,subtype,source) # treat as singleton negative number
+        parts = value.split('-') # local Seshat convention to separate a range of positive numbers (see insert_from_csv)
+        if len(parts) == 2:
+            return '[' + precast_values(parts[0],subtype,source) + ',' + precast_values(parts[1],subtype,source) + ']'
+        return precast_values(value,subtype,source) # single positive number
 
     if value_type == 'xsd:integer':
         # Quite often you'll get absent/present/suspected unknown rather than 0 for long walls
         try:
             int(value)
         except ValueError:
-            print(f"WARNING: Unable to pre-cast '{value}' to integer; assuming 0")
+            print(f"WARNING: Unable to pre-cast '{value}' from {source} to integer; assuming 0")
             value = '0'
 
     if value_type == 'xsd:decimal':
         try:
             float(value)
         except ValueError:
-            print(f"WARNING: Unable to pre-cast '{value}' to decimal; assuming 0.0")
+            print(f"WARNING: Unable to pre-cast '{value}' from {source} to decimal; assuming 0.0")
             value = '0.0'
 
     # if no explicit conversion, just return value...

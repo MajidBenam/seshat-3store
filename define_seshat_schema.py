@@ -168,11 +168,9 @@ def create_seshat_schema(client):
     # all_q = all_q + process_q(q,"Enumerated")
 
     for etype in enumerations:
-        # Name should be leading capitalized
         Name,label,description,choices = etype
-        scoped_Name = "Scoped" + Name # e.g., ScopedEpistemicState
+        Name = Name[0].upper() + Name[1:] # ensure leading capitlized
         scm_Name = normaliseID(Name,'id') # e.g., scm:EpistemicState
-        scm_scoped_Name = normaliseID(scoped_Name,'id') # e.g., ScopedEpistemicState
         if False:  # DEBUG since fixed_generate_choice_list() uses prefix _:, which causes upset
             # choices = normaliseID(choices,'id')
             for choice in choices:
@@ -184,38 +182,23 @@ def create_seshat_schema(client):
         else:
             # HACK define the class but not its structure
             # treat it like a Box type with a string
-            # class scm:ScopedEpistemicState with property EpistemicState of type xsd:string
-            # class scm:ScopedConfidence with property scm:Confidence of type xsd:string
-            # TODO is this even needed?
             raw_type = ensure_raw_type(scm_Name)
             if raw_type != 'xsd:string':
                 print(f"Incorrect ensure_raw_type() entry for {scm_Name}")
                 continue
-            no_prefix_scoped_Name = scm_scoped_Name.split(":")[1]
-            type_info[no_prefix_scoped_Name] = (scm_Name,scm_Name) 
-            if verbose:
-                print(f"enumeration property: {scm_Name} domain: {scm_scoped_Name}")
-
-            qts = WOQLQuery().add_class(scm_scoped_Name).label(label)
-            qps = (WOQLQuery().add_property(scm_Name,raw_type)
-                   .domain(scm_scoped_Name)
-                   .label(label)
-                   .description(description))
-
             # class scm:EpistemicState with property EpistemicState of type xsd:string
             # class scm:Confidence with property scm:Confidence of type xsd:string # << this is used in property_Value confidence
-            no_prefix_Name = scm_Name.split(":")[1]
-            type_info[no_prefix_Name] = (scm_Name,scm_Name) 
+            type_info[Name] = (scm_Name,scm_Name) 
             if verbose:
                 print(f"enumeration property: {scm_Name} domain: {scm_Name}")
-            qtu = WOQLQuery().add_class(scm_Name).label(label)
-            qpu = (WOQLQuery().add_property(scm_Name,raw_type)
-                   .domain(scm_Name)
-                   .label(label)
-                   .description(description))
-            q = WOQLQuery().woql_and(qts,qps,qtu,qpu)
+            qt = WOQLQuery().add_class(scm_Name).label(label)
+            qp = (WOQLQuery().add_property(scm_Name,raw_type)
+                  .domain(scm_Name)
+                  .label(label)
+                  .description(description))
+            q = WOQLQuery().woql_and(qt,qp)
 
-        all_q = all_q + process_q(q,f"{scm_scoped_Name} and {scm_Name}")
+        all_q = all_q + process_q(q,f"{scm_Name}")
 
     # define these after types and enumerations so we can refer to them
     # kevin.js: q7

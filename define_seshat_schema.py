@@ -209,8 +209,12 @@ def create_seshat_schema(client):
 
     q = (WOQLQuery().add_class("ScopedValue")
          .abstract()
-         # Don't we want these to be xsd:gYear and not a range?
          # These were xdd:integerRange
+         # Don't we want these to be xsd:gYear and not a range?
+         # Peter says we should always permit 'unknown' and 'suspected unknown' as a value
+         # Thus we should add the following.  If it is NOT asserted, then lookup its usual typed value
+         # Otherwise the string is 'unknown' (high confidence) or 'suspected unknown' (low confidence) (another enum) and remove it from EpistemicState
+         # .property("unknown", 'xsd:string').label("Unknown").description("Whether the value is unknown")
          .property("start", raw_gYear_type).label("From").description("The start of a time range")
          .property("end", raw_gYear_type).label("To").description("The end of a time range")
          .property("confidence", "scm:Confidence").label("Confidence").description("Qualifiers of the confidence of a variable value")

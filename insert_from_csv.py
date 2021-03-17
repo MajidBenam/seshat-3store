@@ -40,11 +40,16 @@ def execute_commit(qlist):
         # Makes no difference to timing: client.squash(msg) # per Kevin: flatten the 'journal'
         execute_elapsed_s = "%.2fs" % (time.time() - execute_start_time)
         total_assertions += 1
-        inserts = result['inserts']
-        deletes = result['deletes']
-        total_inserts += inserts
-        total_deletes += deletes
-        print(f"{msg} i:{inserts} d:{deletes} {execute_elapsed_s}")
+        if type(result) is dict :
+            inserts = result['inserts']
+            deletes = result['deletes']
+            total_inserts += inserts
+            total_deletes += deletes
+            print(f"{msg} i:{inserts} d:{deletes} {execute_elapsed_s}")
+        else:
+            # Sometimes we get a <Response> object that is not subscriptable?
+            # result.status_code is the HTTP status code, 200 is successful but we don't have bindings?
+            print(f"{msg} {execute_elapsed_s}")
         if dump_results:
             pprint.pprint(result,indent=4)
     except Exception as exception: # API error or whatever

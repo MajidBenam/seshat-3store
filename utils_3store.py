@@ -50,6 +50,13 @@ def ensure_raw_type(raw_type):
         pass
     return raw_type
 
+def pretty_year(year):
+    if type(year) is str :
+        if year == '':
+            return year
+        year = int(year)
+    return '%d%s' % (abs(year), 'BCE' if year < 0 else 'CE')
+
 # this function always returns a string but properly formatted for the cast()
 def precast_values(value,value_type,source):
     if value_type == 'xsd:string':

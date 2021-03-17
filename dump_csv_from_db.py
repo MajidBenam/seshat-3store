@@ -107,7 +107,7 @@ if __name__ == "__main__":
     db_id = "seshat_jsb_mb" #  this gets its own scm: and doc: world
     client = woql.WOQLClient(server_url = "https://127.0.0.1:6363", insecure=True)
     client.connect(key="root", account="admin", user="admin")
-    existing = client.get_database(db_id, client.uid())
+    existing = client.get_database(db_id, client.account())
     if existing:
         client.db(db_id) # set the current db
         schema_tuple = load_schema_info()

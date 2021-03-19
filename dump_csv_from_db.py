@@ -17,22 +17,19 @@ csv_file = None # handle to the open csv file we are creating
 
 def dump_variables(polid,polity_name):
     global variable_info,type_info,client,csv_file
-    rdf_type = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
-    rdf_label = 'http://www.w3.org/2000/01/rdf-schema#label'
+    ignore_pv = ['@context', '@id', '@type', 'rdfs:label', 'scm:original_PolID']
     start_time = time.time()
     def dump_line(var_name,Value_From,Value_To='',Date_From='',Date_To='',confidence='simple'):
         # Note that var_name could have embedded |
         csv_file.write(f"NGA|{polity_name}|{var_name}|{Value_From}|{Value_To}|{Date_From}|{Date_To}|simple||{confidence}|\n")
 
-    # OK this is a complete hack to unpack results directly
-    # There is probably something in Dataframe that does this better
-    results = WOQLQuery().triple(polid,'v:Property_name','v:Values').execute(client) # get all the 'values' for any asserted property on this polity
-    for b in results['bindings']:
-        pv = b['Property_name']
-        value = b['Values']
-        if pv in [rdf_type, rdf_label, 'terminusdb:///schema#original_PolID']:
+    # do a read_object to get all the data at once
+    results = WOQLQuery().read_object(polid,'v:o').execute(client)
+    obj = results['bindings'][0]['o'] # bindings is a single list
+    for pv,value in obj.items():
+        if pv in ignore_pv:
             continue
-        pv_stripped = pv.split('#')[1] # lose scm: prefix (terminusdb:///schema#)
+        pv_stripped = pv.split(':')[1] # lose scm: prefix
         try:
             var_name, scoped, property_type = property_name_info[pv_stripped]
         except KeyError:
@@ -50,49 +47,42 @@ def dump_variables(polid,polity_name):
             return Value_From,Value_To
 
         if scoped:
-            # TODO can we collected all the scoped variables up and issue a single query to get them all?
-            # TODO this will require sepearate variables of course for each scoped _Value instance
-            # var_name -> (instance, prop_var, value_var) plus the qv query
-            # still need to probe the enumerations though
-            # unpack a scoped <property>_Value instance
-            # NOTE: Attempted to do this in dump_csv_from_db2.py but the first major query for scoped variables for a pollity
-            # hung the server for an hour and then crashed the AWS instance!
-            results_vi = WOQLQuery().triple(value,'v:scoped_property','v:scoped_value').execute(client)
-            Value_From = ''
-            Value_To = ''
-            Date_From = ''
-            Date_To = ''
-            Confidence = 'simple'
-            inferred = False
-            for sb in results_vi['bindings']:
-                sp = sb['scoped_property']
-                sv = sb['scoped_value']
-                if sp in [rdf_type]:
-                    continue
-                ssp = sp.split('#')[1] # lose scm: prefix (terminusdb:///schema#)
-                if ssp == 'start':
-                    Date_From = pretty_year(sv['@value'])
-                elif ssp == 'end':
-                    Date_To = pretty_year(sv['@value'])
-                elif ssp == 'confidence':
-                    results_ci = WOQLQuery().triple(sv,'v:cp','v:cv').execute(client)
-                    for cb in results_ci['bindings']:
-                        cp = cb['cp']
-                        cv = cb['cv']
-                        if cp in [rdf_type]:
-                            continue
-                        sv = cv['@value']
-                        if sv == 'inferred':
-                            inferred = True
-                        else:
-                            Confidence = sv
-                else:
-                    # must be the actual value property
-                    Value_From,Value_To = unpack_value(sv['@value'])
-                    # if 'Date' or 'gYear' in property_type: pretty_year(Value_From) pretty_year(Value_To)
-            if inferred:
-                Value_From = 'inferred ' + Value_From
-            dump_line(var_name,Value_From,Value_To,Date_From,Date_To,Confidence)
+            if type(value) is dict:
+                value = [value] # make iterable
+            for value_dict in value:
+                Value_From = ''
+                Value_To = ''
+                Date_From = ''
+                Date_To = ''
+                Confidence = 'simple'
+                inferred = False
+                for sp,sv in value_dict.items():
+                    if sp in ignore_pv:
+                        continue
+                    ssp = sp.split(':')[1] # lose scm: prefix
+                    if ssp == 'start':
+                        Date_From = pretty_year(sv['@value'])
+                    elif ssp == 'end':
+                        Date_To = pretty_year(sv['@value'])
+                    elif ssp == 'confidence':
+                        if type(sv) is dict:
+                            sv = [sv] # make iterable
+                        for sv_dict in sv:
+                            for cp,cv in sv_dict.items():
+                                if cp in ignore_pv:
+                                    continue
+                                sv = cv['@value']
+                                if sv == 'inferred':
+                                    inferred = True
+                                else:
+                                    Confidence = sv
+                    else:
+                        # must be the actual value property
+                        Value_From,Value_To = unpack_value(sv['@value'])
+                        # if 'Date' or 'gYear' in property_type: pretty_year(Value_From) pretty_year(Value_To)
+                if inferred:
+                    Value_From = 'inferred ' + Value_From
+                dump_line(var_name,Value_From,Value_To,Date_From,Date_To,Confidence)
         else:
             # already have the values
             Value_From,Value_To = unpack_value(value['@value'])

@@ -282,7 +282,7 @@ if __name__ == "__main__":
 
     if existing and reset_db: # ensure this database is re-created so the schema is asserted cleanly
         print(f"Deleting database {db_id} to reset!")
-        client.delete_database(db_id)
+        client.delete_database(db_id,client.account())
         existing = False
         
     if not existing:
@@ -290,7 +290,7 @@ if __name__ == "__main__":
         client.create_database(db_id, accountid="admin", label = "Seshat Databank Jim", description = "Create a graph with historical data")
     else:
         # updating data (and/or the schema)
-        client.db(db_id)
+        client.set_db(db_id,client.account())
 
     create_seshat_schema(client)
     save_schema_info((schema_declarations,variable_info,type_info))

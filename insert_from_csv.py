@@ -236,7 +236,7 @@ if __name__ == "__main__":
     client.connect(key="root", account="admin", user="admin")
     existing = client.get_database(db_id, client.account())
     if existing:
-        client.db(db_id) # set the current db
+        client.set_db(db_id,client.account())
         schema_tuple = load_schema_info()
         if schema_tuple is None:
             sys.exit(0)

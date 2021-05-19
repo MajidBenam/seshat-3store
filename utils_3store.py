@@ -75,6 +75,7 @@ def precast_values(value,value_type,source):
         bce = date.find('B')
         if bce >= 0:
             # assume XXXBCE
+            # the form '-1234' is derived from '1234BCE'
             try:
                 date = '-%04d' % int(date[0:bce])
             except ValueError:
@@ -82,10 +83,10 @@ def precast_values(value,value_type,source):
                 date = '0000'
         else:
             ce_ad = date.find('A')
-            if ce_ad == -1:
+            if ce_ad == -1:    # no 'A' found
                 ce_ad = date.find('C')
-                if ce_ad == -1:
-                    ce_ad = len(date)+1
+                if ce_ad == -1:   # no 'C' found
+                    ce_ad = len(date)+1   # to be used in the next try: block
             try:
                 date = '%04d' % int(date[0:ce_ad])
             except ValueError:

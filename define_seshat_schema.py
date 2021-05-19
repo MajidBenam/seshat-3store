@@ -31,7 +31,7 @@ boxed_basic_types = [
     ("xdd:integerRange", "Integer Range", "A simple number or range of integers."),
     ("xdd:decimalRange", "Decimal Range", "A decimal value or, if uncertain, a range of decimal values."),
     ("xdd:dateRange", "Date Range", "A date or a range of dates YYYY-MM-DD"),
-    ]
+]
 
 def normaliseID(raw, _type):
     """Ensure all ids in raw have a (proper) prefix.
@@ -85,9 +85,9 @@ def create_seshat_schema(client):
             except Exception as exception: # API error or whatever
                 print(f"Execution ERROR for: {message} -- skipped")
                 print(f"{exception.msg}")
-    
+
         return q
-    
+
     # kevin.js: initial un-numbered q
     q = WOQLQuery().doctype("Organization",
                             label="Organization",
@@ -126,7 +126,7 @@ def create_seshat_schema(client):
 
     q = WOQLQuery().doctype("CitedWork",label="Cited Work").property("remote_url", "xsd:anyURI")
     all_q = all_q + process_q(q,'CitedWork')
-    
+
 
 
     # This call defines the boxed datatypes we use, e.g., scm:IntegerRange whose 'type' is xdd:IntegerRange
@@ -137,13 +137,13 @@ def create_seshat_schema(client):
              .description("A class that represents a boxed datatype")
              .abstract())
         all_q = all_q + process_q(q,'scm:Box')
-        
+
     for bbt in boxed_basic_types:
         datatype,label,description = bbt
         raw_datatype = ensure_raw_type(datatype) # how we are actually storing it
         Datatype = normaliseID(datatype,'type') # get the scm: prefixed, upper-cased name, e.g., scm:GYear from xsd:gYear
         no_prefix_Datatype = Datatype.split(":")[1]
-        type_info[no_prefix_Datatype] = (Datatype,datatype) 
+        type_info[no_prefix_Datatype] = (Datatype,datatype)
         if verbose:
             print(f"box type property: {Datatype} domain: {Datatype} type: {datatype} as {raw_datatype}")
 
@@ -160,7 +160,7 @@ def create_seshat_schema(client):
               .description(description))
         q = WOQLQuery().woql_and(qt,qp)
         all_q = all_q + process_q(q,Datatype)
-              
+
     # kevin.js: q5+q6
     # Is this class needed for generate_choice_list()?
     # JSB probably not.  it is like Box which just serves to organize the different types
@@ -188,7 +188,7 @@ def create_seshat_schema(client):
                 continue
             # class scm:EpistemicState with property EpistemicState of type xsd:string
             # class scm:Confidence with property scm:Confidence of type xsd:string # << this is used in property_Value confidence
-            type_info[Name] = (scm_Name,scm_Name) 
+            type_info[Name] = (scm_Name,scm_Name)
             if verbose:
                 print(f"enumeration property: {scm_Name} domain: {scm_Name}")
             qt = WOQLQuery().add_class(scm_Name).label(label)
@@ -251,7 +251,7 @@ def create_seshat_schema(client):
         # No need to lookup 'raw' type -- that was done up when we defined our boxed types
         no_prefix_nptype = nptype.split(":")[1]
         variable_info[label] = (npid,True,no_prefix_nptype) # before we add scm: to npid
-
+        shorterLabel = npid
         npid = normaliseID(npid, "id")
         parents.append(nptype)
         newclass = npid + "_Value"
@@ -259,12 +259,13 @@ def create_seshat_schema(client):
         if verbose:
             print(f"property: {npid} domain: {domain} type: {newclass} parents: {parents}")
 
-        q = WOQLQuery().add_class(newclass).label(label).description(description)
+        q = WOQLQuery().add_class(newclass).label(shorterLabel).description(description)
+        #q = WOQLQuery().add_class(newclass).label(label).description(description)
         for parent in parents:
             q.parent(parent)
         all_q = all_q + process_q(q,newclass)
-
-        q = WOQLQuery().add_property(npid, nptype).label(label).description(description).domain(domain)
+        # the property is added with the newclass as its Range
+        q = WOQLQuery().add_property(npid, newclass).label(label).description(description).domain(domain)
         all_q = all_q + process_q(q,npid)
 
     if not execute_incrementally:
@@ -273,9 +274,10 @@ def create_seshat_schema(client):
 
     return True
 
+
 if __name__ == "__main__":
     start_time = time.time()
-    db_id = "seshat_jsb_mb" #  this gets its own scm: and doc: world
+    db_id = "seshat_jsb_mb_2" #  this gets its own scm: and doc: world
     client = woql.WOQLClient(server_url = "https://127.0.0.1:6363", insecure=True)
     client.connect(key="root", account="admin", user="admin")
     existing = client.get_database(db_id, client.account())
@@ -284,10 +286,10 @@ if __name__ == "__main__":
         print(f"Deleting database {db_id} to reset!")
         client.delete_database(db_id,client.account())
         existing = False
-        
+
     if not existing:
         # any need to supply prefixes?  what about include_schema=True so you don't have to reload it?
-        client.create_database(db_id, accountid="admin", label = "Seshat Databank Jim", description = "Create a graph with historical data")
+        client.create_database(db_id, accountid="admin", label = "Seshat Databank Jim and Majid version 2", description = "Create a graph with historical data")
     else:
         # updating data (and/or the schema)
         client.set_db(db_id,client.account())

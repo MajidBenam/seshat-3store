@@ -18,6 +18,8 @@ csv_file = None # handle to the open csv file we are creating
 def dump_variables(polid,polity_name):
     global variable_info,type_info,client,csv_file
     ignore_pv = ['@context', '@id', '@type', 'rdfs:label', 'scm:original_PolID']
+    ignore_pv_level2 = ['@context', '@type', 'rdfs:label', 'scm:original_PolID']
+
     start_time = time.time()
     def dump_line(var_name,Value_From,Value_To='',Date_From='',Date_To='',confidence='simple'):
         # Note that var_name could have embedded |
@@ -25,6 +27,7 @@ def dump_variables(polid,polity_name):
 
     # do a read_object to get all the data at once
     results = WOQLQuery().read_object(polid,'v:o').execute(client)
+    results2 = WOQLQuery().read_object('doc:Capital_Value_afdurrn_38','v:oo').execute(client)
     obj = results['bindings'][0]['o'] # bindings is a single list
     for pv,value in obj.items():
         if pv in ignore_pv:
@@ -57,9 +60,13 @@ def dump_variables(polid,polity_name):
                 Confidence = 'simple'
                 inferred = False
                 for sp,sv in value_dict.items():
-                    if sp in ignore_pv:
+                    if sp in ignore_pv_level2:
                         continue
-                    ssp = sp.split(':')[1] # lose scm: prefix
+                    if sp == '@id':
+                        results_level2 = WOQLQuery().read_object(sv,'v:oo').execute(client) 
+                        #results_level2 = WOQLQuery().triple(sv, 'scm:String', "v:value").execute(client)
+                        print('Hallo')
+                    ssp = sv.split(':')[1] # lose scm: prefix
                     if ssp == 'start':
                         Date_From = pretty_year(sv['@value'])
                     elif ssp == 'end':
@@ -78,7 +85,8 @@ def dump_variables(polid,polity_name):
                                     Confidence = sv
                     else:
                         # must be the actual value property
-                        Value_From,Value_To = unpack_value(sv['@value'])
+                        pass
+                        # Value_From,Value_To = unpack_value(sv['@value'])
                         # if 'Date' or 'gYear' in property_type: pretty_year(Value_From) pretty_year(Value_To)
                 if inferred:
                     Value_From = 'inferred ' + Value_From
@@ -94,7 +102,7 @@ def dump_variables(polid,polity_name):
 if __name__ == "__main__":
     # global client
     start_time = time.time()
-    db_id = "seshat_jsb_mb" #  this gets its own scm: and doc: world
+    db_id = "seshat_jsb_mb_2" #  this gets its own scm: and doc: world
     client = woql.WOQLClient(server_url = "https://127.0.0.1:6363", insecure=True)
     client.connect(key="root", account="admin", user="admin")
     existing = client.get_database(db_id, client.account())
@@ -110,7 +118,7 @@ if __name__ == "__main__":
             property_name, scoped, property_type = entry
             property_name_info[property_name]  = (variable,scoped,property_type)
             
-        csv_filename = 'seshat.csv';
+        csv_filename = 'seshat_v2.csv';
         try:
             csv_file = open(csv_filename,"w")
         except IOError:

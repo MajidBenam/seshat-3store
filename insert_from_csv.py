@@ -65,65 +65,117 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
     def unique_var(prefix):
         uid = increment_unique_id()
         return f"{prefix}_{uid}"
-    
-    if polity_query_name != Polity:
-        if polity_query is not None:
+    # this if only takes care of:
+    # 1) the name of the polity for which we are creating a collective query (polity_query_name) 
+    # 2) the list of all the queries we need for this Polity (polity_query)
+    # this -if- will be only true, the first time we are seeing a new Polity in our csv file:
+    # the first time we set the polity_query_name to *Polity* and the list of polity_query to *[]*
+    # for the rest of the lines for *Polity*, the name is already set and the list of queries is getting appended
+    # so no need to enter this -if- unless we encounter a new polity in the csv. 
+    if polity_query_name != Polity:      
+        if polity_query is not None:     # this condition is False unless we are about to start a new Polity
             execute_commit(polity_query)
         # fallthrough
-        polity_query_name = Polity
-        polity_query = [] # add individual queries to the list for a final woql_and in execute_commit()
+        polity_query_name = Polity       
+        polity_query = []                # we add individual queries to this for a final collective query for Polity
 
 
+    # sample *key: value* pairs in variable_info[Variable]:
+    # **********NEEDS RECHECKING***********
+    # VERSION 1:
+    # key: Variable ---> 'General variables||Alternative names'
+    # value: ('General_variables__Alternative_names', True, 'String')
+    # key: Variable ---> 'General variables||Capital'
+    # value: ('General_variables__Capital', True, 'String')
+    #
+    # VERSION 2:
+    # key: Variable ---> 'General variables||Alternative names'
+    # value: ('Alternative_names', True, 'String')
+    # key: Variable ---> 'General variables||Capital'
+    # value: ('Capital', True, 'String')
+    #
+    # We must have ALL the possible properties in variable_info to get ZERO exception errors here: 
     try:
         property_name, scoped, property_type = variable_info[Variable]
     except KeyError:
-        print(f"WARNING: Unknown property {Variable} - skipping")
+        print(f"WARNING: Unknown property: {Variable} - skipping")
         return None
     
     if scoped:
         property_Value = property_name + '_Value'
-        doc_property_Value = 'doc:' + property_Value
+        # workaround
+        doc_property_Value = 'terminusdb:///data/' + property_Value
+        # doc_property_Value = 'doc:' + property_Value
         scm_property_Value = 'scm:' + property_Value
+        
+        # typical values for type_info[property_type]:
+        # key: property_type ---> 'String'
+        # value: ('scm:String', 'xsd:string')
+        #
+        # We need to have as much knowledge as we can about the types to get no exceptions:
         try:
             property_value_name, raw_type = type_info[property_type]
         except KeyError:
             print(f"WARNING: Unknown type {property_type} for {Variable} - skipping")
             return None
             
-    else:
-        raw_type = property_type
+    else:                                # if unscoped; the only case: 'original_PolID'
+        raw_type = property_type         # xsd:string for 'original_PolID'
+    
+    # no matter scoped or unscoped, ensure the raw type in case casting is not done properly
+    # Ex: make sure that 'xsd:gYear' (which does NOT work properly yet) casts to 'xsd:integer'
     real_raw_type = ensure_raw_type(raw_type)
     
-    lower_Polity = Polity.lower() # Make canonical;this was the previous encoding idea for ids
+    # up to here, we have only decided on the *Polity* and the property that the csv line is referring to
+    # we have given them names and types, etc
+
+    # we use lower_Polity from now on...
+    lower_Polity = Polity.lower()       # Make canonical;this was the previous encoding idea for ids
     where = f"{Polity}|{Variable}"
     # normally (like on the wiki or on another web interface) we would present all the Scoped values
     # for a variable and then reassert them enmass, deleting the prior versions
     # However, with a csv we don't know the order of the lines for all the multiple values
-    # so we maintain a dict of what variables we've started to assert and if
-    # this is a new variable we delete all the extant triples
+    # so we maintain a dict of what variables we've started to assert and
+    # if this is a new variable we delete all the extant triples
     # this assumes, of course, that the csv contains, eventually, all the values for the property
     # and not just additions
+    # MB: flushed_values is a dict that contains all the different properties that have been done for a Polity
+    # in the *key:value* form as: {'AfDurrn': [var1, var2, ...]}
     try:
-        flushed_values[Polity]
+        flushed_values[Polity]   # if this doesnt fail, the Polity is NOT new, therefore the next line.
         new_polity = False
-    except KeyError:
-        flushed_values[Polity] = [] # what variables have been flushed this session
+    except KeyError:                      # if the -try- fails, this is a new Polity, so empty the flushed values
+        flushed_values[Polity] = [] # what variables have been flushed this session      
         new_polity = True
 
     if new_polity:
         # TODO how do you bind all the instances of an scm:Polity to a variable?
-        qp = WOQLQuery().woql_or(WOQLQuery().triple('v:Polity_ID','original_PolID',Polity), # look up original if it exists under the lower_Polity name
-                             # Doesn't exist so create a Polity instance
+        # it's like we are not trusting the new_polity variable and we are checking it again!!
+        # NOTE: Polity is the original name (AfGhurd) and lower_Polity is the canonical name (afghurd) of the Polity
+        # NOTE: if left alone, a triple normally puts 'scm:' before a triple word.
+        qp = WOQLQuery().woql_or(WOQLQuery().triple('v:Polity_ID','original_PolID',Polity),
+                            # look up original if it exists under the lower_Polity name
+                            # Doesn't exist, so create a Polity instance
+                            # the id of the instance of scm:Polity will be the lower_polity
+                            # we make sure the new 'scm:Polity' has a property called 'scm:original_PolID' 
+                            # with its value: Polity 
                              WOQLQuery().woql_and(WOQLQuery().idgen(lower_Polity,[],'v:Polity_ID'), # create an atom (why can't we use a raw string?)
-                                                  (WOQLQuery().insert('v:Polity_ID','scm:Polity',label=Polity). # create in instance of scm:Polity
+                                                  (WOQLQuery().insert('v:Polity_ID','scm:Polity',label=Polity). # create an instance of scm:Polity
                                                    property('original_PolID',Polity)))) # record the original 'spelling', e.g. AfHepht vs. afhepht
+        # whatever the qp is, append it to the list of queries for this polity 
         polity_query.append(qp)
 
     # collect up all property queries for each Polity and when it changes, execute the collection once
+    # if the property (Variable) has not yet been seen for this polity:
+    # Do two things:
+    # 1) Flush the property (Variable) for this Polity
+    # 2) Make sure there are no old garbage values for the smae property in the database 
     if Variable not in flushed_values[Polity]:
-        # do this once, if at all for each property_name
         flushed_values[Polity].append(Variable) # flushed done
         old_value_var = unique_var('v:Old_Values')
+        # old_value_var will only provide us with a temporary variable to use in the delete query
+        # in case of scoped variables, we need to delete it sepaately because it is a class itself
+        # for unscoped properties it is only a value and there is no object involved
         # It is ok that this fails since it might be a new property
         # or a new class instance without any property at all
         qf = WOQLQuery()
@@ -141,40 +193,56 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
             qf.opt(WOQLQuery().woql_and(WOQLQuery().triple('v:Polity_ID',property_name,old_value_var),
                                          WOQLQuery().delete_triple('v:Polity_ID',property_name,old_value_var)))
         polity_query.append(qf)
+        # NOTE: 'v:Polity_ID' remains the same variable in all above queries for each Polity
+        # Remember that we are merging all queries for one polity together
 
     qv = WOQLQuery() # updated/continued by side effect
+
+    # time to take care of properties (the third argument onward) in assert_seshat_row
+    # First: make sure that the values are well casted.
+
+    # the main value is almost always in Value_From
+    # we check to see if there is a Value_To, in this case, we form a new value (string): 'Value_From:Value_To'
     value = Value_From
     if 'Range' in raw_type:
         if Value_To != empty_value:
             value = Value_From + ':' + Value_To # don't use - as separator
+    # now that the value is quite ready, we precast it to make some minor changes for coherency.
+    # value is THE important piece of information in this row
     value = precast_values(value,raw_type,where)
     
+    # dates and confidence are empty strings so far.
     dates = ''
     confidence = ''
     if scoped:
         # generate an instance of a scoped data value type
+        # and connect it to its Polity class using the property_name
         pv_var = unique_var('v:propertyValue_ID')
         unique_id(qv,doc_property_Value,[lower_Polity],pv_var) # will this generate a new id each time and ensure unique id
-        qv.insert(pv_var,scm_property_Value) # create an instance of the Value boxed class
+        qv.insert(pv_var,scm_property_Value) # create an instance of the _Value boxed class
         qv.add_triple('v:Polity_ID',property_name,pv_var) # assert the scoped property value
 
         # get type, if enumerated check that the given value is (lower) the allowed value
         # else cast to type
         # do dates handle CE and BCE and AD and BC?
         inferred = False
+        # check if the string 'inferred' is in the value, if so, remove it, but change *inferred* to True
         if 'inferred' in value:
             # test scoped here; if not scoped we have a problem
             inferred = True
             value = value.split(' ')[1]
         val_var = unique_var('v:Value')
         qv.cast(value,real_raw_type,val_var) 
-        qv.add_triple(pv_var,property_value_name,val_var) # store the cast value on the proper property name on the _value instance
+        qv.add_triple(pv_var,property_value_name,val_var) # store the cast value on the proper property name on the _Value instance
+        # we just added a triple related to one scoped value in qv
+        # when the enumerations are working, we should make sure that the value is stored in an enumeration
+        # if it is present, absent, p_to_a or a_to_p, etc...
 
         # NOTE: hard coded information about types under ScopedValue
-        # if those types changes in the schema, this code must change as well
+        # if those types change in the schema, this code must change as well
         if Date_From != empty_value:
             # Does gYear handle 450CE? NO
-            # under ScopedValue why not dates as integerRange rather than start and end?
+            # under ScopedValue why not dates as integerRange rather than start and end? Yes.
             Date_From = precast_values(Date_From,gYear_type,f"{where}_DateFrom")
             df_var = unique_var('v:Date_From')
             qv.cast(Date_From,raw_gYear_type,df_var) # cast'ing to xsd:gYear fails to return anything and does not complain
@@ -192,7 +260,7 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
             # eventually we need to convert 'disputed' into the enumerated value in the class
             # name an instance of ScopedConfidence and assert property 'String'
             cd_var = unique_var('v:SVcd')
-            unique_id(qv,'doc:Confidence',[Polity,property_name],cd_var)
+            unique_id(qv,'doc:Confidence',[lower_Polity,property_name],cd_var)
             qv.insert(cd_var,Confidence_type) # make a Confidence instance
             cdv_var = unique_var('v:SVcdv')
             # Does cast deal w/ enums?
@@ -231,7 +299,7 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
 if __name__ == "__main__":
     # global client
     start_time = time.time()
-    db_id = "seshat_jsb_mb" #  this gets its own scm: and doc: world
+    db_id = "seshat_jsb_mb_2" #  this gets its own scm: and doc: world
     client = woql.WOQLClient(server_url = "https://127.0.0.1:6363", insecure=True)
     client.connect(key="root", account="admin", user="admin")
     existing = client.get_database(db_id, client.account())

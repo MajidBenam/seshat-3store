@@ -1,7 +1,6 @@
 NGA|Polity|Section|Subsection|Variable|Value From|Value To|Date From|Date To|Fact Type|Value Note|Date Note|Error Note
 NGA|Code book|General variables||Language|Latin||||simple|simple|| 87
-NGA|AfDurrn|General variables||RA|Stephen Dean||||complex|list|| 406
-NGA|AfDurrn|General variables||RA|Alice Williams||||complex|list|| 406
+NGA|AfDurrn|General variables||GV_RA|Majid Williams||||complex|list|| 406
 NGA|AfDurrn|General variables||Original name|Durrani Empire||||simple|simple|| 408
 NGA|AfDurrn|General variables||Alternative names|Sadozai Kingdom||||complex|list|| 410
 NGA|AfDurrn|General variables||Alternative names|Last Afghan Empire||||complex|list|| 410
@@ -118,7 +117,7 @@ NGA|AfDurrn|Warfare variables|Military Technologies|Complex fortifications|prese
 NGA|AfDurrn|Warfare variables|Military Technologies|Long walls|0||||simple|simple|| 676
 NGA|AfDurrn|Warfare variables|Military Technologies|Modern fortifications|present||||simple|simple|| 677
 NGA|AfDurrn|Institutional Variables||RA|Eli J. Levine||||simple|simple|| 685
-NGA|AfDurrn|Social Mobility|Status|elite status is hereditary|present||||simple|simple|| 700
+NGA|AfDurrn|Social Mobility|Status|Elite status is hereditary|present||||simple|simple|| 700
 NGA|AfDurrn|Religion and Normative Ideology||RA|Enrico Cioni||||simple|simple|| 703
 NGA|AfDurrn|Religion and Normative Ideology|Deification of Rulers|Rulers are legitimated by gods|present||||simple|simple|| 707
 NGA|AfDurrn|Religion and Normative Ideology|Deification of Rulers|Rulers are gods|absent||||simple|simple|| 709
@@ -126,7 +125,7 @@ NGA|AfDurrn|Religion and Normative Ideology|Normative Ideological Aspects of Equ
 NGA|AfDurrn|Religion and Normative Ideology|Normative Ideological Aspects of Equity and Prosociality|Ideological reinforcement of equality|absent||||simple|uncertain|| 713
 NGA|AfDurrn|Religion and Normative Ideology|Normative Ideological Aspects of Equity and Prosociality|Ideological thought equates rulers and commoners|present||||simple|uncertain|| 714
 NGA|AfDurrn|Religion and Normative Ideology|Normative Ideological Aspects of Equity and Prosociality|Ideological thought equates rulers and commoners|absent||||simple|uncertain|| 714
-NGA|AfDurrn|Religion and Normative Ideology|Normative Ideological Aspects of Equity and Prosociality|Ideological thought equates elites and commoners|present||||simple|simple|| 715
+NGA|AfDurrn|Religion and Normative Ideology|Normative Ideological Aspects of Equity and Prosociality|Ideological thought equates Elites and commoners|present||||simple|simple|| 715
 NGA|AfDurrn|Religion and Normative Ideology|Normative Ideological Aspects of Equity and Prosociality|Ideology reinforces prosociality|present||||simple|simple|| 716
 NGA|AfDurrn|Religion and Normative Ideology|Normative Ideological Aspects of Equity and Prosociality|production of public goods|present||||simple|simple|| 717
 NGA|AfDurrn|Religion and Normative Ideology|Moralizing Supernatural Powers|Moral concern is primary|present||||simple|simple|| 720
@@ -248,7 +247,7 @@ NGA|AfGhurd|Warfare variables|Military Technologies|Complex fortifications|infer
 NGA|AfGhurd|Warfare variables|Military Technologies|Long walls|0||||simple|simple|| 1086
 NGA|AfGhurd|Warfare variables|Military Technologies|Modern fortifications|absent||||simple|simple|| 1087
 NGA|AfGhurd|Institutional Variables||RA|Kiran Basava||||simple|simple|| 1095
-NGA|AfGhurd|Social Mobility|Status|elite status is hereditary|inferred present||||simple|simple|| 1110
+NGA|AfGhurd|Social Mobility|Status|Elite status is hereditary|inferred present||||simple|simple|| 1110
 NGA|AfGhurd|Religion and Normative Ideology||RA|Enrico Cioni||||simple|simple|| 1113
 NGA|AfGhurd|Religion and Normative Ideology|Deification of Rulers|Rulers are legitimated by gods|present||||simple|simple|| 1117
 NGA|AfGhurd|Religion and Normative Ideology|Deification of Rulers|Rulers are gods|absent||||simple|simple|| 1119
@@ -391,7 +390,7 @@ NGA|AfGrBct|Warfare variables|Military Technologies|Fortified camps|suspected un
 NGA|AfGrBct|Warfare variables|Military Technologies|Complex fortifications|present||||simple|simple|| 1461
 NGA|AfGrBct|Warfare variables|Military Technologies|Modern fortifications|absent||||simple|simple|| 1463
 NGA|AfGrBct|Institutional Variables||RA|Agathe Dupeyron||||simple|simple|| 1469
-NGA|AfGrBct|Social Mobility|Status|elite status is hereditary|inferred present||||simple|simple|| 1484
+NGA|AfGrBct|Social Mobility|Status|Elite status is hereditary|inferred present||||simple|simple|| 1484
 NGA|AfGrBct|Religion and Normative Ideology||RA|Enrico Cioni||||simple|simple|| 1487
 NGA|AfGrBct|Religion and Normative Ideology|Deification of Rulers|Rulers are legitimated by gods|inferred absent||||simple|simple|| 1491
 NGA|AfGrBct|Religion and Normative Ideology|Deification of Rulers|Rulers are gods|inferred present||||simple|simple|| 1493

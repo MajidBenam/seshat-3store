@@ -1,0 +1,17 @@
+NGA|Polity|Section|Subsection|Variable|Value From|Value To|Date From|Date To|Fact Type|Value Note|Date Note|Error Note
+NGA|AfDurrn|General variables||RA|Alice Williams||||complex|list|| 406
+NGA|AfDurrn|General variables||Original name|Durrani Empire||||simple|simple|| 408
+NGA|AfDurrn|General variables||Alternative names|Sadozai Kingdom||||complex|list|| 410
+NGA|AfDurrn|General variables||Alternative names|Last Afghan Empire||||complex|list|| 410
+NGA|AfDurrn|General variables||Peak Date|1761 CE||||simple|simple|| 412
+NGA|AfDurrn|General variables||Duration|1747-1826 CE||||simple|simple|| 418
+NGA|AfDurrn|General variables||Degree of centralization|loose||||simple|simple|| 420
+NGA|AfDurrn|General variables||Supra-polity relations|none||||simple|simple|| 422
+NGA|AfDurrn|Social Complexity variables|Social Scale|Polity territory|1600000|1700000|1200CE|1200CE|complex|range|| 832
+NGA|AfDurrn|Religion and Normative Ideology|Normative Ideological Aspects of Equity and Prosociality|Ideological reinforcement of equality|absent||||simple|uncertain|| 2322
+NGA|AfDurrn|Social Complexity variables|Law|Professional Lawyers|suspected unknown||||simple|simple|| 2690
+NGA|AfDurrn|Social Complexity variables|Social Scale|Population of the largest settlement|78000|104000|1650BCE|1601BCE|complex|range|range| 4537
+NGA|AfDurrn|Social Complexity variables|Bureaucracy characteristics|Full-time bureaucrats|absent||||simple|disputed|| 1721
+NGA|AfDurrn|Social Complexity variables|Social Scale|Polity territory|900000|1100000|1175CE||complex|range|| 832
+NGA|AfDurrn|Social Complexity variables|Social Scale|Polity territory|1670000|1700000|1200CE|1260CE|complex|range|| 832
+NGA|AfDurrn|Social Complexity variables|Social Scale|Polity territory|1670000|1700000|||complex|range|| 832

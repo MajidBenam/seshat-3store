@@ -9,7 +9,8 @@ from utils_3store import *
 verbose = False # CONTROL
 reset_db = True # CONTROL
 
-gYear_type = 'xsd:gYear'
+#gYear_type = 'xsd:gYear'
+gYear_type = 'xdd:gYearRange'
 raw_gYear_type = ensure_raw_type(gYear_type)
 
 schema_declarations = {} # special things about the schema loaded
@@ -20,7 +21,7 @@ from seshat_schema_equinox_flat import *
 # These are the low-level (castable) types we use in boxed classes, e.g., scm:String has property String that holds an xsd:string
 # Note capitalization!
 boxed_basic_types = [
-    # ("xsd:boolean", "Boolean","True or False"),
+    ("xsd:boolean", "Boolean","True or False"),
     ("xsd:string", "String","Any text or sequence of characters"),
     ("xsd:decimal", "Decimal", "A decimal number."),
     ("xsd:integer", "Integer", "A simple number."),
@@ -203,8 +204,8 @@ def create_seshat_schema(client):
     # define these after types and enumerations so we can refer to them
     # kevin.js: q7
     q = (WOQLQuery().add_class("Note").label("A Note on a value").description("Editorial note on the value")
-         .property("citation", "scm:CitedWork").label("Citation").description("A link to a cited work")
-         .property("quotation", "xsd:string").label("Quotation").description("A quotation from a work"))
+         .property("Citation", "scm:CitedWork").label("Citation").description("A link to a cited work")
+         .property("Quotation", "xsd:string").label("Quotation").description("A quotation from a work"))
     all_q = all_q + process_q(q,'Note')
 
     q = (WOQLQuery().add_class("ScopedValue")
@@ -215,10 +216,11 @@ def create_seshat_schema(client):
          # Thus we should add the following.  If it is NOT asserted, then lookup its usual typed value
          # Otherwise the string is 'unknown' (high confidence) or 'suspected unknown' (low confidence) (another enum) and remove it from EpistemicState
          # .property("unknown", 'xsd:string').label("Unknown").description("Whether the value is unknown")
-         .property("start", raw_gYear_type).label("From").description("The start of a time range")
-         .property("end", raw_gYear_type).label("To").description("The end of a time range")
-         .property("confidence", "scm:Confidence").label("Confidence").description("Qualifiers of the confidence of a variable value")
-         .property("notes", "scm:Note") .label("Notes").description("Editorial notes on values"))
+         .property("Years", raw_gYear_type).label("FromTo").description("The start of a time range")
+         .property("confidence_tags", "scm:Confidence").label("Confidence Tags").description("Qualifiers of the confidence of a variable value")
+         .property("notes", "scm:Note") .label("Notes").description("Editorial notes on values")
+         .property("Unknown", "xsd:boolean").label("Unknown").description("Is the value unknown or not")
+         .property("Disputed", "xsd:boolean").label("Disputed").description("Is the value disputed or not"))
     all_q = all_q + process_q(q,'ScopedValue')
 
 
@@ -277,7 +279,7 @@ def create_seshat_schema(client):
 
 if __name__ == "__main__":
     start_time = time.time()
-    db_id = "seshat_jsb_mb_2" #  this gets its own scm: and doc: world
+    db_id = "test_seshat_jim_majid" #  this gets its own scm: and doc: world
     client = woql.WOQLClient(server_url = "https://127.0.0.1:6363", insecure=True)
     client.connect(key="root", account="admin", user="admin")
     existing = client.get_database(db_id, client.account())
@@ -289,7 +291,7 @@ if __name__ == "__main__":
 
     if not existing:
         # any need to supply prefixes?  what about include_schema=True so you don't have to reload it?
-        client.create_database(db_id, accountid="admin", label = "Seshat Databank Jim and Majid version 2", description = "Create a graph with historical data")
+        client.create_database(db_id, accountid="admin", label = "A Test Seshat Database (Jim and Majid)", description = "Create a graph with historical data")
     else:
         # updating data (and/or the schema)
         client.set_db(db_id,client.account())

@@ -10,7 +10,8 @@ pp = pprint.PrettyPrinter(indent=4) # for debugger
 verbose_mode = False # CONTROL silence 'adds' but report commits
 dump_results = False # CONTROL on successful commits; very noisy with batched queries
 enumerations_enabled = False # CONTROL
-gYear_type = 'xsd:gYear'
+# gYear_type = 'xsd:gYear'
+gYear_type = 'xdd:gYearRange'
 raw_gYear_type = ensure_raw_type(gYear_type)
 Confidence_type = 'scm:Confidence'
 raw_Confidence_type = ensure_raw_type(Confidence_type)
@@ -226,11 +227,21 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
         # else cast to type
         # do dates handle CE and BCE and AD and BC?
         inferred = False
+        suspected = False
+        disputed = False
+        unknown = False
         # check if the string 'inferred' is in the value, if so, remove it, but change *inferred* to True
         if 'inferred' in value:
             # test scoped here; if not scoped we have a problem
             inferred = True
             value = value.split(' ')[1]
+        if 'suspected' in value:
+            suspected = True
+            value = value.split(' ')[1]
+        if 'unknown' in value:
+            unknown = True
+            # maybe we need to break here and skip the row
+            value = 'UNKNOWN'#value.split(' ')[1]
         val_var = unique_var('v:Value')
         qv.cast(value,real_raw_type,val_var) 
         qv.add_triple(pv_var,property_value_name,val_var) # store the cast value on the proper property name on the _Value instance
@@ -241,53 +252,56 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
         # NOTE: hard coded information about types under ScopedValue
         # if those types change in the schema, this code must change as well
         if Date_From != empty_value:
-            # Does gYear handle 450CE? NO
-            # under ScopedValue why not dates as integerRange rather than start and end? Yes.
-            Date_From = precast_values(Date_From,gYear_type,f"{where}_DateFrom")
-            df_var = unique_var('v:Date_From')
-            qv.cast(Date_From,raw_gYear_type,df_var) # cast'ing to xsd:gYear fails to return anything and does not complain
-            qv.add_triple(pv_var,'start',df_var)
             dates = dates + f":{Date_From}"
+            Date_FromTo = Date_From
             if Date_To != empty_value:
-                Date_To = precast_values(Date_To,gYear_type,f"{where}_DateTo")
-                dt_var = unique_var('v:Date_To')
-                qv.cast(Date_To,raw_gYear_type,dt_var) # cast'ing to xsd:gYear fails to return anything and does not complain
-                qv.add_triple(pv_var,'end',dt_var)
                 dates =  f"[{Date_From},{Date_To}]"
+                Date_FromTo = Date_From + '-' + Date_To
+
+
+            # merge the result with Date_FromTo
+            # might be sensitive to raw_gYear_type or gYear_type
+            Date_FromTo = precast_values(Date_FromTo,gYear_type,f"{where}_DateFromTo")
+            date_f_t_var = unique_var('v:Date_From_To')
+            qv.cast(Date_FromTo,raw_gYear_type,date_f_t_var) # cast'ing to xsd:gYear fails to return anything and does not complain
+            qv.add_triple(pv_var,'Years',date_f_t_var)
+
+        if scoped and (Value_Note == 'disputed' or Value_Note == 'uncertain'):
+            disputed = True
+            qv.add_triple(pv_var,'Disputed',disputed)
+
+        if scoped and unknown:
+            qv.add_triple(pv_var,'Unknown',unknown)
 
         # TODO require scoped to deal with disputed else badly formed csv
-        if scoped and Value_Note == 'disputed':
-            # eventually we need to convert 'disputed' into the enumerated value in the class
-            # name an instance of ScopedConfidence and assert property 'String'
-            cd_var = unique_var('v:SVcd')
-            unique_id(qv,'doc:Confidence',[lower_Polity,property_name],cd_var)
-            qv.insert(cd_var,Confidence_type) # make a Confidence instance
-            cdv_var = unique_var('v:SVcdv')
-            # Does cast deal w/ enums?
-            qv.cast(Value_Note,raw_Confidence_type,cdv_var) # eventually not 'disputed' but a variable bound to the right enum instance with disputed as 'label'
-            qv.add_triple(cd_var,Confidence_type,cdv_var)   # The property has the name as the class!
-            # add the Confidence instance to the ScopedValue instance NOTE the cardinality of confidence must be > 1
-            qv.add_triple(pv_var,'confidence',cd_var)
-            confidence = confidence + f" {Value_Note}"
             
         # Note we can have multiple 'confidence' assertions such as 'disputed' and 'inferred'? for the same 'value'?  Happens in the db, e.g.,
         # NGA|CnLrJin|Warfare variables|Military Technologies|Incendiaries|inferred present||||simple|disputed||
         # NGA|CnLrJin|Warfare variables|Military Technologies|Incendiaries|present||||simple|disputed||
         # TODO require scoped to deal with inferred else badly formed csv
-        if scoped and inferred:
+        if scoped and (inferred or suspected):
             ci_var = unique_var('v:SVci')
-            unique_id(qv,'doc:Confidence',[Polity,property_name],ci_var)
+            confid_doc = 'terminusdb:///data/Confidence'
+            unique_id(qv,confid_doc,[Polity,property_name],ci_var)
             qv.insert(ci_var,Confidence_type) # make a Confidence instance
             civ_var = unique_var('v:SVciv')
             # Does cast deal w/ enums?
-            qv.cast('inferred',raw_Confidence_type,civ_var) # eventually not 'inferred' but a variable bound to the right enum instance with disputed as 'label'
-            qv.add_triple(ci_var,Confidence_type,civ_var)   # The property has the name as the class!
-            # add the Confidence instance to the ScopedValue instance NOTE the cardinality of confidence must be > 1
-            qv.add_triple(pv_var,'confidence',ci_var)
-            confidence = confidence + " inferred"
+            if inferred:
+                qv.cast('inferred',raw_Confidence_type,civ_var) # eventually not 'inferred' but a variable bound to the right enum instance with disputed as 'label'
+                qv.add_triple(ci_var,Confidence_type,civ_var)   # The property has the name as the class!
+                # add the Confidence instance to the ScopedValue instance NOTE the cardinality of confidence must be > 1
+                qv.add_triple(pv_var,'confidence_tags',ci_var)
+                confidence = confidence + "inferred"
+            if suspected:
+                qv.cast('suspected',raw_Confidence_type,civ_var) # eventually not 'inferred' but a variable bound to the right enum instance with disputed as 'label'
+                qv.add_triple(ci_var,Confidence_type,civ_var)   # The property has the name as the class!
+                # add the Confidence instance to the ScopedValue instance NOTE the cardinality of confidence must be > 1
+                qv.add_triple(pv_var,'confidence_tags',ci_var)
+                confidence = confidence + "suspected"
 
         # TODO any Date_Note save as a Note instance (v:Note) and assert qv.property('notes','v:Note')
-    else: # unscoped
+    else: # unscoped (is it ever hit? check later)
+        val_var = unique_var('v:UnscopedValue')
         qv.cast(value,real_raw_type,val_var)
         qv.add_triple('v:Polity_ID',property_name,val_var)
     polity_query.append(qv)
@@ -299,7 +313,7 @@ def assert_seshat_row(Polity, Variable, Value_From, Value_To, Date_From, Date_To
 if __name__ == "__main__":
     # global client
     start_time = time.time()
-    db_id = "seshat_jsb_mb_2" #  this gets its own scm: and doc: world
+    db_id = "test_seshat_jim_majid" #  this gets its own scm: and doc: world
     client = woql.WOQLClient(server_url = "https://127.0.0.1:6363", insecure=True)
     client.connect(key="root", account="admin", user="admin")
     existing = client.get_database(db_id, client.account())

@@ -8,8 +8,8 @@ enumerations = [
     # This is only used in ScopedValue
     ("Confidence", "Confidence Tags", "Tags that can be added to values to indicate confidence in the value of some piece data", [
     ["inferred", "Inferred", "The value has been logically inferred from other evidence"], # This means that if we parse 'inferred present' we need to assert present as value w/ confidence inferred
-    ["disputed", "Disputed", "The evidence is disputed - some believe this data to be incorrect"], # for {} values
-    ["unknown", "Unknown", "It can be said with a high degree of confidence that it is not known whether the feature was present or absent in the context."],
+    #["disputed", "Disputed", "The evidence is disputed - some believe this data to be incorrect"], # for {} values
+    ["suspected", "Suspected", "An RA asserts that it can be said with a high degree of confidence that it is not known whether the feature was present or absent in the context."],
 
     # Actually treat suspected like inferred...a type of confidence on, e.g., unknown below
     # uncertain is represented as alternative entries (triples) for the same date or as a numeric range (using a Range type)
